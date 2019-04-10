@@ -110,9 +110,13 @@ class ColorMerger:
 			imps = [ImagePlus(path) if path else None for path in imgpaths]
 		else:
 			imps = [WindowManager.getImage(title) if title else None for title in sortedchannels]
-		
+		for img in imps:
+			if img:
+				calibration = img.getCalibration()
+				break
 		merger = RGBStackMerge()
 		composite = merger.mergeChannels(imps, False)
+		composite.setCalibration(calibration)
 		if self.savefolder:
 			save_string = os.path.join(self.savefolder, root)
 			IJ.log("\tSaving {0}".format(save_string))
