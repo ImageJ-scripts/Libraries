@@ -1,8 +1,16 @@
 # ColorMerger.py
 # Dev: Igor Bonacossa Pereira.
 # Email: i.bonacossapereira@uq.edu.au
-
+# Bootstrap to extend modules search path #
+from sys import path
 import os.path
+from java.lang.System import getProperty
+jython_scripts = os.path.join(getProperty('user.home'), 'Jython_scripts')
+path.append(jython_scripts)
+#=========================================#
+
+
+#import os.path
 import java.lang.Exception
 import traceback
 
@@ -44,11 +52,9 @@ class ColorMerger:
 
 		if self.search:
 			img_list = buildList(self.imgfolder, extension=self.ext)
-			dialog = GenericDialog("ColorMerger.py")
-			dialog.addMessage("There are {0} images to be processed.\n Proceed?".format(len(img_list)))
-			dialog.showDialog()
-			if dialog.wasCanceled():
-				IJ.log("Canceled by the user.")
+			opt = input("There are {0} images to be processed.\n Proceed?".format(len(img_list)))
+			if opt == "N":
+				IJ.log("Canceled by the user.\nExiting...")
 				return
 			titleslist = [os.path.split(img)[1] for img in img_list]
 		else:
@@ -145,7 +151,7 @@ class ColorMerger:
 if __name__ in ("__builtin__", "__main__"):
 
 	savefolder = r"C:\Users\Igor\Desktop"
-	ext = ".jpg"
-	imgfolder = r"D:\OneDrive - The University of Queensland\Code learning\tests\test_img"
+	ext = ".tif"
+	imgfolder = r"G:\Igor\Projects\Let-805\Raw Data\Microscopies\Yokogawa Spinning Disk\let-805(syb381)\unc-70(n493)\1DOA\63x OIL\raw"
 	cm = ColorMerger(savefolder, imgfolder, ext)
 	cm.run()
