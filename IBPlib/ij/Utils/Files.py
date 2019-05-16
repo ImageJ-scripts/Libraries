@@ -12,7 +12,7 @@ def buildList(path, extension=".tif", exclusionFlag="done"):
 		raise IOError("buildList couldn't find {0}".format(path))
 	files = []
 	for f in os.listdir(path):
-		if not f.endswith(extension) or f.find(exclusionFlag)>0:
+		if not f.lower().endswith(extension) or f.find(exclusionFlag)>0:
 			continue
 		files.append(os.path.join(path, f))
 	return files
