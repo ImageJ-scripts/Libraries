@@ -22,7 +22,7 @@ class ThreadedFileSaver(Thread):
 		This class is only exposing the saveAs... methods
 		See ij.io.FileSaver for available saveAs methods.
 		'''
-		super(t_filesaver,self).__init__(name="{0}.{1}".format(__threadname__, savepath))
+		super(ThreadedFileSaver,self).__init__(name="{0}.{1}".format(__threadname__, savepath))
 		self.args = (f, savepath, command)
 		
 	def run(self):
