@@ -10,6 +10,9 @@ def buildList(path, extension=".tif", exclusionFlag="done"):
 	'''
 	if not os.path.exists(path):
 		raise IOError("buildList couldn't find {0}".format(path))
+	elif not os.path.isdir(path):
+		raise IOError("buildList only accepts directory paths")
+		
 	files = []
 	for f in os.listdir(path):
 		if not f.lower().endswith(extension) or f.find(exclusionFlag)>0:
