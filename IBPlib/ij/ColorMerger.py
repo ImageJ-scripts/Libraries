@@ -10,7 +10,7 @@ from threading import Thread
 from Queue import Queue
 from time import clock
 
-from ij import ImagePlus
+from ij import (ImagePlus, IJ)
 from ij.io import FileSaver
 from ij.plugin import RGBStackMerge
 from IBPlib.ij.Colortags import Colortags
@@ -35,9 +35,9 @@ class ColorMerger:
 		'''
 		Main pipeline to merge images in parallel
 		'''
-		print("\n### ColorMerger v{0} has started".format(__version__))
+		IJ.log("\n### ColorMerger v{0} has started".format(__version__))
 		img_list = buildList(self.imgfolder, extension=self.ext)
-		print("{0} images are being processed.\n".format(len(img_list)))
+		IJ.log("\n{0} images are being processed.".format(len(img_list)))
 		titleslist = [os.path.split(img)[1] for img in img_list]
 		sortedtitles = self.sortbytag(titleslist)
 		tasks_q= Queue()
@@ -49,7 +49,7 @@ class ColorMerger:
 			thread.start()
 			tasks_q.put(thread)
 		tasks_q.join()
-		print("### Done merging.")
+		IJ.log("\n### Done merging.")
 
 
 	def sortbytag(self, titleslist):		
@@ -75,7 +75,7 @@ class ColorMerger:
 		for root, channels in sortedimgs.items():
 			channelcount = len([True for title in channels if title])
 			if channelcount < 2:
-				print("Skipping <{0}> as it had only one channel.".format(root))
+				IJ.log("\nSkipping <{0}> as it had only one channel.".format(root))
 				singlets.append(root)
 		[sortedimgs.pop(root) for root in singlets]
 		return sortedimgs
@@ -87,7 +87,7 @@ class ColorMerger:
 		If ColorMerger was initialized with a savefolder it will try to save img in savefolder
 		else will merge channels, close original images and show the resulting composite.
 		'''
-		print("## Merging <{0}>".format(root))
+		IJ.log("\n## Merging <{0}>".format(root))
 		imgpaths = [os.path.join(self.imgfolder, title) if title else None for title in sortedchannels]
 		imps = [ImagePlus(path) if path else None for path in imgpaths]
 		for img in imps:
@@ -99,11 +99,11 @@ class ColorMerger:
 		composite.setCalibration(calibration)
 		if self.savefolder:
 			save_string = os.path.join(self.savefolder, root)
-			print("\tSaving {0}".format(save_string))
+			IJ.log("\tSaving {0}".format(save_string))
 			try:
 				FileSaver(composite).saveAsTiff(save_string)
 			except (Exception, java.lang.Exception) as e:
-				print("ij.io.FileSaver raised an {0} exception while trying to save img '{1}' as '{2}'. Skipping image."
+				IJ.log("ij.io.FileSaver raised an {0} exception while trying to save img '{1}' as '{2}'. Skipping image."
 						.format(e, root, save_string))
 		else:
 			composite.setTitle(root)
@@ -117,7 +117,7 @@ class ColorMerger:
 		try:
 			self.mergechannels(root, sortedchannels)
 		except (Exception, java.lang.Exception):
-			print(traceback.format_exc())
+			IJ.log(traceback.format_exc())
 		finally:
 			q.task_done()
 		

@@ -36,9 +36,9 @@ class Projector:
 		'''
 		Main pipeline to generate the projections images in parallel
 		'''
-		print("\n### Z-projector v{0} has started".format(__version__))
+		IJ.log("\n### Z-projector v{0} has started".format(__version__))
 		img_list = buildList(self.imgfolder, extension=self.ext)
-		print("There are {0} images to be processed.\n".format(len(img_list)))
+		IJ.log("There are {0} images to be processed.\n".format(len(img_list)))
 		titleslist = [os.path.split(img)[1] for img in img_list]
 
 		tasks_q= Queue()
@@ -52,11 +52,11 @@ class Projector:
 			tasks_q.put(thread)
 		tasks_q.join()
 
-		print("### Done projecting.")
+		IJ.log("### Done projecting.")
 
 	def doprojection(self, title):
 		
-		print("# Processing {0}...".format(title))
+		IJ.log("# Processing {0}...".format(title))
 		imgpath = os.path.join(self.imgfolder, title)
 		imp = ImagePlus(imgpath)
 		composite_imp = CompositeImage(imp, 1)
@@ -65,9 +65,9 @@ class Projector:
 			save_string = os.path.join(self.savefolder, title)
 			try:
 				ij.io.FileSaver(projection).saveAsTiff(save_string)
-				print("## {0} Done processing ".format(title))
+				IJ.log("## {0} Done processing ".format(title))
 			except:
-				print("ij.io.FileSaver raised an exception while trying to save img '{0}' as '{1}'.Skipping image."
+				IJ.log("ij.io.FileSaver raised an exception while trying to save img '{0}' as '{1}'.Skipping image."
 						.format(title, save_string))
 		else:
 			imp.close()
@@ -81,7 +81,7 @@ class Projector:
 		try:
 			self.doprojection(img)
 		except (Exception, java.lang.Exception):
-			print(traceback.format_exc())
+			IJ.log(traceback.format_exc())
 		finally:
 			q.task_done()
 		
