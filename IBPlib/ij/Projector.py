@@ -74,10 +74,10 @@ class Projector:
 			imp = ImagePlus(imgpath)
 		else:
 			imp = WindowManager.getImage(title)
-		
-
+		calibration = imp.getCalibration()
 		composite_imp = CompositeImage(imp, 1)
 		projection = ZProjector.run(composite_imp, self.method)
+		projection.setCalibration(calibration)
 		if self.savefolder:
 			save_string = os.path.join(self.savefolder, title)
 			try:
@@ -86,7 +86,6 @@ class Projector:
 			except:
 				IJ.log("ij.io.FileSaver raised an exception while trying to save img '{0}' as '{1}'.Skipping image."
 						.format(title, save_string))
-
 		else:
 			imp.close()
 			projection.show()
