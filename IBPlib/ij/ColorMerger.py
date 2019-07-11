@@ -10,11 +10,11 @@ from threading import Thread
 from Queue import Queue
 from time import clock
 
-from ij import (ImagePlus, IJ)
+from ij import IJ
 from ij.io import FileSaver
 from ij.plugin import RGBStackMerge
 from IBPlib.ij.Colortags import Colortags
-from IBPlib.ij.Utils.Files import buildList
+from IBPlib.ij.Utils.Files import (buildList, imageloader)
 
 __version__ = "1.0"
 __threadname__ = "IBPlib.ij.ColorMerger" # Threads spawned by ColorMerger have this name + name of the final image.
@@ -52,7 +52,7 @@ class ColorMerger:
 		IJ.log("\n### Done merging.")
 
 
-	def sortbytag(self, titleslist):		
+	def sortbytag(self, titleslist):
 		'''
 		Sorts and indexes images based on the root of the image title and color tag index.
 		Image gets excluded from sorted list if it has only one channel.
@@ -81,6 +81,18 @@ class ColorMerger:
 		return sortedimgs
 
 
+	def mergerthread_task(self, q, root, sortedchannels):
+		'''
+		Wrapper method to encapsulate mergechannels in a Thread inside a Queue object
+		'''
+		try:
+			self.mergechannels(root, sortedchannels)
+		except (Exception, java.lang.Exception):
+			IJ.log(traceback.format_exc())
+		finally:
+			q.task_done()
+
+
 	def mergechannels(self, root, sortedchannels):
 		'''
 		Merge sorted channels(list of titles) under a given root title.
@@ -89,7 +101,7 @@ class ColorMerger:
 		'''
 		IJ.log("\n## Merging <{0}>".format(root))
 		imgpaths = [os.path.join(self.imgfolder, title) if title else None for title in sortedchannels]
-		imps = [ImagePlus(path) if path else None for path in imgpaths]
+		imps = [imageloader(path, self.ext) if path else None for path in imgpaths]
 		for img in imps:
 			if img:
 				calibration = img.getCalibration()
@@ -110,17 +122,6 @@ class ColorMerger:
 			[imp.close() for imp in imps if imp]
 			composite.show()
 
-	def mergerthread_task(self, q, root, sortedchannels):
-		'''
-		Wrapper method to encapsulate mergechannels in a Thread inside a Queue object
-		'''
-		try:
-			self.mergechannels(root, sortedchannels)
-		except (Exception, java.lang.Exception):
-			IJ.log(traceback.format_exc())
-		finally:
-			q.task_done()
-		
 
 if __name__ in ("__builtin__", "__main__"):
 
