@@ -6,7 +6,7 @@ import os.path
 import java.lang.Exception
 import traceback
 
-from threading import Thread
+from threading import (Thread, current_thread)
 from Queue import Queue
 from time import clock
 
@@ -107,7 +107,14 @@ class ColorMerger:
 				calibration = img.getCalibration()
 				break
 		merger = RGBStackMerge()
-		composite = merger.mergeChannels(imps, False)
+		
+		try:
+			composite = merger.mergeChannels(imps, False)
+		except (Exception, java.lang.Exception):
+			t_name = current_thread().name
+			IJ.log("# {0}\t{1} images skipped as channels have different dimensions".format(t_name, root))
+			return
+			
 		composite.setCalibration(calibration)
 		if self.savefolder:
 			save_string = os.path.join(self.savefolder, root)
