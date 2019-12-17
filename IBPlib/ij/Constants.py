@@ -8,3 +8,5 @@ COLORS = (
 	"Yellow"
 )
 LIBPREFSKEY = "IBPlib"
+__STORAGE_DIR__ = ""
+__MAGNIFICATION_DIR__ = "63x OIL"
