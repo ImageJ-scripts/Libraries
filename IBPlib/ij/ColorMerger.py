@@ -6,16 +6,15 @@ import os.path
 import java.lang.Exception
 import traceback
 
-from threading import Thread
+from threading import (Thread, current_thread)
 from Queue import Queue
 from time import clock
 
-from ij import (IJ, ImagePlus, WindowManager)
-from ij.gui import GenericDialog
+from ij import IJ
 from ij.io import FileSaver
 from ij.plugin import RGBStackMerge
 from IBPlib.ij.Colortags import Colortags
-from IBPlib.ij.Utils.Files import buildList
+from IBPlib.ij.Utils.Files import (buildList, imageloader)
 
 __version__ = "1.0"
 __threadname__ = "IBPlib.ij.ColorMerger" # Threads spawned by ColorMerger have this name + name of the final image.
@@ -31,32 +30,17 @@ class ColorMerger:
 		self.imgfolder = imgfolder
 		self.ext = ext
 
-		if self.imgfolder and self.savefolder and self.ext:
-			self.search = True
-		else:
-			self.search = False
 
 	def run(self):
 		'''
 		Main pipeline to merge images in parallel
 		'''
 		IJ.log("\n### ColorMerger v{0} has started".format(__version__))
-
-		if self.search:
-			img_list = buildList(self.imgfolder, extension=self.ext)
-			dialog = GenericDialog("ColorMerger.py")
-			dialog.addMessage("There are {0} images to be processed.\n Proceed?".format(len(img_list)))
-			dialog.showDialog()
-			if dialog.wasCanceled():
-				IJ.log("Canceled by the user.")
-				return
-			titleslist = [os.path.split(img)[1] for img in img_list]
-		else:
-			titleslist = WindowManager.getImageTitles()
-	
+		img_list = buildList(self.imgfolder, extension=self.ext)
+		IJ.log("\n{0} images are being processed.".format(len(img_list)))
+		titleslist = [os.path.split(img)[1] for img in img_list]
 		sortedtitles = self.sortbytag(titleslist)
 		tasks_q= Queue()
-		
 		for root, channels in sortedtitles.items():
 			thread = Thread(target=self.mergerthread_task,
 							args=(tasks_q, root, channels),
@@ -65,11 +49,10 @@ class ColorMerger:
 			thread.start()
 			tasks_q.put(thread)
 		tasks_q.join()
+		IJ.log("\n### Done merging.")
 
-		IJ.log("### Done merging.")
 
-		
-	def sortbytag(self, titleslist):		
+	def sortbytag(self, titleslist):
 		'''
 		Sorts and indexes images based on the root of the image title and color tag index.
 		Image gets excluded from sorted list if it has only one channel.
@@ -92,10 +75,22 @@ class ColorMerger:
 		for root, channels in sortedimgs.items():
 			channelcount = len([True for title in channels if title])
 			if channelcount < 2:
-				IJ.log("Skipping <{0}> as it had only one channel.".format(root))
+				IJ.log("\nSkipping <{0}> as it had only one channel.".format(root))
 				singlets.append(root)
 		[sortedimgs.pop(root) for root in singlets]
 		return sortedimgs
+
+
+	def mergerthread_task(self, q, root, sortedchannels):
+		'''
+		Wrapper method to encapsulate mergechannels in a Thread inside a Queue object
+		'''
+		try:
+			self.mergechannels(root, sortedchannels)
+		except (Exception, java.lang.Exception):
+			IJ.log(traceback.format_exc())
+		finally:
+			q.task_done()
 
 
 	def mergechannels(self, root, sortedchannels):
@@ -104,18 +99,22 @@ class ColorMerger:
 		If ColorMerger was initialized with a savefolder it will try to save img in savefolder
 		else will merge channels, close original images and show the resulting composite.
 		'''
-		IJ.log("## Merging <{0}>".format(root))
-		if self.search:
-			imgpaths = [os.path.join(self.imgfolder, title) if title else None for title in sortedchannels]
-			imps = [ImagePlus(path) if path else None for path in imgpaths]
-		else:
-			imps = [WindowManager.getImage(title) if title else None for title in sortedchannels]
+		IJ.log("\n## Merging <{0}>".format(root))
+		imgpaths = [os.path.join(self.imgfolder, title) if title else None for title in sortedchannels]
+		imps = [imageloader(path, self.ext) if path else None for path in imgpaths]
 		for img in imps:
 			if img:
 				calibration = img.getCalibration()
 				break
 		merger = RGBStackMerge()
-		composite = merger.mergeChannels(imps, False)
+		
+		try:
+			composite = merger.mergeChannels(imps, False)
+		except (Exception, java.lang.Exception):
+			t_name = current_thread().name
+			IJ.log("# {0}\t{1} images skipped as channels have different dimensions".format(t_name, root))
+			return
+			
 		composite.setCalibration(calibration)
 		if self.savefolder:
 			save_string = os.path.join(self.savefolder, root)
@@ -130,22 +129,11 @@ class ColorMerger:
 			[imp.close() for imp in imps if imp]
 			composite.show()
 
-	def mergerthread_task(self, q, root, sortedchannels):
-		'''
-		Wrapper method to encapsulate mergechannels in a Thread inside a Queue object
-		'''
-		try:
-			self.mergechannels(root, sortedchannels)
-		except (Exception, java.lang.Exception):
-			print(traceback.format_exc())
-		finally:
-			q.task_done()
-		
 
 if __name__ in ("__builtin__", "__main__"):
 
-	savefolder = r"C:\Users\Igor\Desktop"
-	ext = ".jpg"
-	imgfolder = r"D:\OneDrive - The University of Queensland\Code learning\tests\test_img"
+	savefolder = r"C:\Users\uqibonac\Desktop\temp\test"
+	ext = ".tif"
+	imgfolder = r"G:\Igor\Projects\Let-805\Raw Data\Microscopies\Yokogawa Spinning Disk\let-805(syb381)\unc-70(n493)\1DOA\63x OIL\raw"
 	cm = ColorMerger(savefolder, imgfolder, ext)
 	cm.run()
