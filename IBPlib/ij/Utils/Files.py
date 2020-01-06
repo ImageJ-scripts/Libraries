@@ -23,6 +23,20 @@ def buildList(path, extension=".tif", exclusionFlag="done"):
 		files.append(os.path.join(path, f))
 	return files
 
+def imageloader(path, ext):
+	'''
+	Wrapper to deal with opening bioformat images properly in macros
+	Returns an ImagePlus if successful and exception if not.
+	Read ij.ImagePlus and loci.plugins.BF.openImagePlus for details.
+	'''
+	from ij import ImagePlus
+	from loci.plugins import BF
+
+	if ext in BIOFORMATS:
+		return BF.openImagePlus(path)[0]
+	else:
+		return ImagePlus(path)
+
 def validate_token_group_schema(groups_dict):
 	'''
 	Validates against the schema below.
