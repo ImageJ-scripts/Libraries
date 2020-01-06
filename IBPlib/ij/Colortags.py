@@ -5,8 +5,8 @@ from IBPlib.ij.Constants import LIBPREFSKEY, COLORS
 
 SUBKEY="{0}.colortags".format(LIBPREFSKEY) # Base name for userPrefs key used by Colortags.py
 
-class Colortags():	
-	
+class Colortags:
+
 	def __init__(self):
 
 		self.window = None
@@ -16,7 +16,7 @@ class Colortags():
 		self.load()
 		while not self.tags:
 			self.edit("Please set at least one colortag.\n\n")
-		
+
 	def load(self):
 		'''
 		Tries to load IBPlib colortags from IJ prefs.
@@ -27,7 +27,7 @@ class Colortags():
 				continue
 			trimmedtagslist = [t.strip() for t in storedtags.split(",")]
 			self.tags.update({i:trimmedtagslist})
-	
+
 	def edit(self, msg=""):
 		'''
 		Opens the color tags dialog to update color tags
@@ -44,7 +44,7 @@ class Colortags():
 		if self.window.wasOKed():
 			self.__savetags()
 			self.load()
-		
+
 	def __validate(self):
 
 		fields = self.window.getStringFields()
@@ -53,7 +53,7 @@ class Colortags():
 			txt = fields[i].getText()
 			newvalues.update({i: txt.strip()})
 		return newvalues
-		
+
 	def __savetags(self):
 
 		newvalues = self.__validate()
