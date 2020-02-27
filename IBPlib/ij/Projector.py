@@ -74,7 +74,7 @@ class Projector:
 		'''
 		IJ.log("# Processing {0}...".format(title))
 		imgpath = os.path.join(self.imgfolder, title)
-		imp = imageloader(imgpath, self.ext)
+		imp = imageloader(imgpath)
 		composite_imp = CompositeImage(imp, 1)
 		projection = ZProjector.run(composite_imp, self.method)
 		if self.savefolder:

@@ -2,6 +2,17 @@
 # Igor Bonacossa-Pereira
 # i.bonacossapereira@uq.edu.au
 import os
+
+
+# Boilerplate to extend modules search path #
+#from sys import path
+#import os.path
+#from java.lang.System import getProperty
+#jython_scripts = os.path.join(getProperty('user.home'), 'Jython_scripts')
+#path.append(jython_scripts)
+#=========================================#
+
+
 from IBPlib.ij.Constants import (__STORAGE_DIR__, __MAGNIFICATION_DIR__)
 
 BIOFORMATS = (".sld", ".ics", ".hdf5", ".czi", ".icd", ".ids")
@@ -23,7 +34,7 @@ def buildList(path, extension=".tif", exclusionFlag="done"):
 		files.append(os.path.join(path, f))
 	return files
 
-def imageloader(path, ext):
+def imageloader(path):
 	'''
 	Wrapper to deal with opening bioformat images properly in macros
 	Returns an ImagePlus if successful and exception if not.
@@ -31,7 +42,7 @@ def imageloader(path, ext):
 	'''
 	from ij import ImagePlus
 	from loci.plugins import BF
-
+	ext = os.path.splitext(path)[1]
 	if ext in BIOFORMATS:
 		return BF.openImagePlus(path)[0]
 	else:
@@ -119,3 +130,7 @@ if __name__ == "__main__":
 	}
 
 	print(sort_to_storage(name, tokens))
+	
+if __name__ in ("__builtin__", "__main__"):
+	path = r"R:\Igor BP\Projects\Let-805\Raw Data\Microscopies\Yokogawa Spinning Disk\let-805\unc-70(s1502)\38AH\63x OIL\decon\z-projections\050220_QH7726_38AH_worm1__cmle.tif"
+	imageloader(path).show()
