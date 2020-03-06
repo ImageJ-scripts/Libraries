@@ -11,7 +11,7 @@ path.append(jython_scripts)
 import os
 import threading
 import csv
-import sys
+import datetime
 
 from sc.fiji.snt import SNTService, Tree
 from sc.fiji.snt.analysis import RoiConverter
@@ -23,7 +23,28 @@ from ij.plugin.frame import RoiManager
 
 from IBPlib.ij.Routines import batch_parameters
 from IBPlib.ij.Utils.Files import imageloader
+from IBPlib.ij.Utils.Misc import validate_th_method
 
+__VERSION__ = "1.1"
+__NOW__ = datetime.date.today()
+__BATCH_NAME__ = "IBPlib.tracing_and_linescanning v{0} {1}".format(__VERSION__,__NOW__)
+
+def get_batch_schema():
+	'''
+	WIP
+	'''
+	__PARAMS_SCHEMA = {
+		"raw_images": list,
+		"analysed_images": list,
+		"th_method": str,
+		"stroke_width": int,
+		"output_folder": str,
+		"analysis_ch": int,
+		"tracing_ch": int,
+	}
+	return __PARAMS_SCHEMA
+
+	
 def assisted_SNTtrace(context, imp):
 	'''
 	Calls SNT in a given img for user assisted tracing.
@@ -41,6 +62,9 @@ def assisted_SNTtrace(context, imp):
 	SNTpaths = pafm.getPaths()
 	if not SNTpaths:
 		IJ.error("No paths found. Restarting tracing step.")
+		snt.cancelPath()
+		snt.cancelSearch(True)
+		snt.getUI().changeState(snt.UI.READY)
 		assisted_SNTtrace(context, imp)
 	return SNTpaths
 
@@ -152,7 +176,7 @@ def apply_threshold(imp, th_method):
 	imp.setProcessor(bp)
 
 
-def run(context, imp, output_folder, analysis_ch, th_method, stroke_width, dispose_snt=True):
+def run(context, imp, output_folder, analysis_ch, th_method, stroke_width, tracing_ch, dispose_snt=True):
 	'''
 	**dispose_snt kwarg is not implemented.
 
@@ -170,13 +194,14 @@ def run(context, imp, output_folder, analysis_ch, th_method, stroke_width, dispo
 	Importantly, the orginal image is not altered in any way.
 	'''
 	# Validation steps to prevent headaches along the pipeline
-	parameters.validate_th_method(th_method)
+	validate_th_method(th_method)
 	n_ch = imp.getNChannels()
 	if n_ch < analysis_ch:
 		raise ValueError("Analysis ch cannot be bigger than total number of channels.")
 
 	rois_output, csvs_output = setup_output_folders(output_folder)
 	imp.changes = False
+	#imp.setC(tracing_ch)
 	try:
 		SNTpaths = assisted_SNTtrace(context, imp)
 	except RuntimeError:
@@ -211,24 +236,36 @@ def get_clean_RoiManager(show=False):
 	return rm
 
 
-def batch_run(context, params_dict):
+def batch_run(context, batch_parameters):
 	'''
 	Runs the analysis pipeline for each img inside the raw_images key
 	then updates the parameter dictionary and saves it.
 	'''
 	IJ.log("Running pipeline...")
-	for i, img in enumerate(params_dict["raw_images"]):
-		progress = "{0}/{1}".format(i+1, len(params_dict["raw_images"]))
-		print("Progress: ", progress)
-		imp = imageloader(img)
-		if not run(context, imp, params_dict["output_folder"], params_dict["analysis_ch"], params_dict["th_method"], params_dict["stroke_width"]):
-			print("Batch run canceled.")
+	images = batch_parameters.get("raw_images")
+	total_images = len(images)
+	if not batch_parameters.get("analysed_images"):
+		analysed_images = []
+	else:
+		analysed_images = batch_parameters.get("analysed_images")
+	i=1
+	while len(images) >0:
+		progress = "{0}/{1}".format(i, total_images)
+		IJ.log("Progress: {0}".format(progress))
+		imp = imageloader(images[0])
+		if not run(context, imp, batch_parameters.get("output_folder"),
+			batch_parameters.get("analysis_ch"), batch_parameters.get("th_method"),
+			batch_parameters.get("stroke_width"), batch_parameters.get("tracing_ch")):
+			IJ.log("Batch run canceled.")
 			return
-		#params_dict["raw_images"].pop(i)
-		params_dict["analysed_images"].append(img)
-	parameters.save_from_dict(params_dict, params_dict["output_folder"])
+		i += 1
+		analysed_images.append(images[0])
+		batch_parameters.set("analysed_images", analysed_images)
+		images.pop(0)
+		batch_parameters.set("raw_images", images)
+	batch_parameters.to_json_file(batch_parameters.get("output_folder"))
 	IJ.log("Done ...")
-	IJ.log("Results stored in '{0}'".format(params_dict["output_folder"]))
+	IJ.log("Results stored in '{0}'".format(batch_parameters.get("output_folder")))
 
 
 def profile_from_threshold(imp, analysis_ch, rois, stroke_width, th_method, csvs_output):
@@ -253,7 +290,7 @@ def profile_from_threshold(imp, analysis_ch, rois, stroke_width, th_method, csvs
 	return True
 
 
-def batch_profile_from_threshold(params_dict):
+def batch_profile_from_threshold(batch_parameters):
 	'''
 	Thresholds the desired channel using the threshold method specified and saves the
 	roi profile in the csv_output.
@@ -267,11 +304,11 @@ def batch_profile_from_threshold(params_dict):
 	from IBPlib.ij.Utils.Files import buildList
 
 	opener = Opener()
-	rois_folder, csvs_folder = setup_output_folders(params_dict["output_folder"])
+	rois_folder, csvs_folder = setup_output_folders(batch_parameters.get("output_folder"))
 	IJ.log("Plotting profiles...")
 
-	for i, img in enumerate(params_dict["analysed_images"]):
-		progress = "{0}/{1}".format(i+1, len(params_dict["analysed_images"]))
+	for i, img in enumerate(batch_parameters.get("analysed_images")):
+		progress = "{0}/{1}".format(i+1, len(batch_parameters.get("analysed_images")))
 		IJ.log("\n# Progress: {0}\n".format(progress))
 
 		imp = imageloader(img)
@@ -283,9 +320,9 @@ def batch_profile_from_threshold(params_dict):
 		if not rois:
 			IJ.log("## No rois found for {0}".format(title))
 
-		if not profile_from_threshold(imp, params_dict["analysis_ch"],
-			rois, params_dict["stroke_width"],
-			params_dict["th_method"], csvs_folder):
+		if not profile_from_threshold(imp, batch_parameters.get("analysis_ch"),
+			rois, batch_parameters.get("stroke_width"),
+			batch_parameters.get("th_method"), csvs_folder):
 			IJ.log("Batch run canceled.")
 			return
 
