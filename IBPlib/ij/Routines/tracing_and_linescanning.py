@@ -25,7 +25,7 @@ from IBPlib.ij.Routines import batch_parameters
 from IBPlib.ij.Utils.Files import imageloader
 from IBPlib.ij.Utils.Misc import validate_th_method
 
-__VERSION__ = "1.1"
+__VERSION__ = "1.11"
 __NOW__ = datetime.date.today()
 __BATCH_NAME__ = "IBPlib.tracing_and_linescanning v{0} {1}".format(__VERSION__,__NOW__)
 
@@ -58,14 +58,8 @@ def assisted_SNTtrace(context, imp):
 	if dialog.escPressed():
 		raise RuntimeError("Canceled by the user.")
 
-	# Stops this thread until tracing operation is confirmed by user.
 	SNTpaths = pafm.getPaths()
-	if not SNTpaths:
-		IJ.error("No paths found. Restarting tracing step.")
-		snt.cancelPath()
-		snt.cancelSearch(True)
-		snt.getUI().changeState(snt.UI.READY)
-		assisted_SNTtrace(context, imp)
+
 	return SNTpaths
 
 
@@ -88,6 +82,7 @@ def prepare_SNT(context, imp):
 		sntUI.changeState(snt.UI.READY)
 
 	plugin = snt.getPlugin()
+	print(imp)
 	plugin.initialize(imp)
 	plugin.getPathAndFillManager().clear()
 	plugin.enableAstar(True)
@@ -115,7 +110,7 @@ def convert_SNTpaths_to_roi(SNTpaths):
 def get_profile(imp, roi, rm):
 	'''
 	Iteratively get the profile of each roi in a list from give img.
-	returns ProfilePlots
+	returns ProfilePlots.
 	'''
 	i = rm.getCount()
 	rm.add(roi, i)
@@ -129,6 +124,7 @@ def setup_output_folders(output_folder):
 	'''
 	Returns the rois output folder and the csvs output folder.
 	If folders do not exist, will try to create them inside the output folder.
+	Will create a folder named rois and another named csvs.
 	'''
 	outputs = (os.path.join(output_folder, "rois"), os.path.join(output_folder, "csvs"))
 	[os.mkdir(folder) for folder in outputs if not os.path.exists(folder)]
@@ -208,6 +204,11 @@ def run(context, imp, output_folder, analysis_ch, th_method, stroke_width, traci
 		SNTService().getPlugin().closeAndResetAllPanes()
 		imp.close()
 		return False
+		
+	if not SNTpaths:
+		IJ.error("No paths found, reloading image.\nDid you forget to finish the trace?")
+		return run(context, imp, output_folder, analysis_ch, th_method, stroke_width, tracing_ch, dispose_snt=dispose_snt)
+		
 	imp.hide()
 	analysis_imp = get_analysis_ch(imp, analysis_ch)
 	apply_threshold(analysis_imp, th_method)
@@ -257,6 +258,7 @@ def batch_run(context, batch_parameters):
 			batch_parameters.get("analysis_ch"), batch_parameters.get("th_method"),
 			batch_parameters.get("stroke_width"), batch_parameters.get("tracing_ch")):
 			IJ.log("Batch run canceled.")
+			batch_parameters.to_json_file(batch_parameters.get("output_folder"))
 			return
 		i += 1
 		analysed_images.append(images[0])

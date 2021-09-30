@@ -17,24 +17,34 @@ from IBPlib.ij.Constants import (__STORAGE_DIR__, __MAGNIFICATION_DIR__)
 
 BIOFORMATS = (".sld", ".ics", ".hdf5", ".czi", ".icd", ".ids")
 
-def buildList(path, extension=".tif", exclusionFlag="done"):
+def buildList(path, extension=".tif", exclusionFlag="done", debug=False):
 	'''
 	Returns a list with all the binary paths to files in the given path of the choosen extension that do not contain
 	the exclusion flag in the title
 	'''
+	if debug:
+		print("buildList() -> args={0}".format([path, extension, exclusionFlag]))
+	
 	if not os.path.exists(path):
 		raise IOError("buildList couldn't find {0}".format(path))
 	elif not os.path.isdir(path):
 		raise IOError("buildList only accepts directory paths")
+	elif os.path.ismount(path):
+		raise IOError("Cannot operate on mounted drives.")
+	elif os.path.islink(path):
+		raise IOError("Please resolve sim links before passing it.")
 
 	files = []
+		
 	for f in os.listdir(path):
+		if debug:
+			print(f)
 		if not f.lower().endswith(extension) or f.find(exclusionFlag)>0:
 			continue
 		files.append(os.path.join(path, f))
 	return files
 
-def imageloader(path):
+def imageloader(path, debug=False):
 	'''
 	Wrapper to deal with opening bioformat images properly in macros
 	Returns an ImagePlus if successful and exception if not.

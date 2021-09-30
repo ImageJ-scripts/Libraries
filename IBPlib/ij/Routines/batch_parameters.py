@@ -7,7 +7,9 @@ __BATCH_FILENAME = "IBPlib_batch.json"
 
 
 class Batch_Parameters:
-
+	'''
+	Main object to store batch run parameters used in IBPlib routines.
+	'''
 	def __init__(self,schema, batch_name="IBPlib_batch"):
 		'''
 		Instanciates Batch_parameters from a dict schema.
