@@ -43,7 +43,7 @@ class ColorMerger:
 		self.workers = []
 		
 
-	def run(self, onGPU=False):
+	def run(self, onGPU=False, postProcessingMethod=None, postProcessingMethodArgs=[]):
 		'''
 		Main pipeline to merge images in parallel
 		'''
@@ -59,7 +59,10 @@ class ColorMerger:
 		IJ.log("\n#########\n")
    
 		for root, channels in sortedtitles.items():
-			self.tasks_q.put((root, channels, onGPU), block=True)
+			self.tasks_q.put((root, channels, onGPU,
+				postProcessingMethod,
+				postProcessingMethodArgs),
+			block=True)
 		IJ.log("Tasks ready")
 		self.setup_workers()
 
@@ -70,7 +73,7 @@ class ColorMerger:
 	def dummy_task(self):
 		import time.sleep
 		while not self.tasks_q.empty():
-			root, channels, onGPU = self.tasks_q.get()
+			root, sortedchannels, onGPU, postProcessingMethod, postProcessingMethodArgs = self.tasks_q.get()
 			IJ.log("Working on {0}".format(root))
 			time.sleep(5)
 			IJ.log("Done working on {0}".format(root))
@@ -119,21 +122,26 @@ class ColorMerger:
 		return sortedimgs
 
 
-	def mergerthread_task(self, tasks_q):
+	def mergerthread_task(self):
 		'''
 		Wrapper method to encapsulate mergechannels in a Thread inside a Queue object
 		'''
 		while not self.tasks_q.empty():
-			root, sortedchannels, onGPU = tasks_q.get()
+			root, sortedchannels, onGPU, postProcessingMethod, postProcessingMethodArgs = self.tasks_q.get()
 			try:
-				self.mergechannels(root, sortedchannels, onGPU=onGPU)
+				self.mergechannels(root,
+						sortedchannels,
+						onGPU=onGPU,
+						postProcessingMethod=postProcessingMethod,
+						postProcessingMethodArgs=postProcessingMethodArgs)
 			except (Exception, java.lang.Exception):
 				IJ.log(traceback.format_exc())
 			finally:
-				tasks_q.task_done()
+				self.tasks_q.task_done()
 
 
-	def mergechannels(self, root, sortedchannels, onGPU=False):
+	def mergechannels(self, root, sortedchannels, onGPU=False, postProcessingMethod=None,
+		postProcessingMethodArgs=[]):
 		'''
 		Merge sorted channels(list of titles) under a given root title.
 		If ColorMerger was initialized with a savefolder it will try to save img in savefolder
@@ -150,10 +158,18 @@ class ColorMerger:
 		
 		try:
 			composite = merger.mergeChannels(imps, False)
+			composite.setTitle(root)
 		except (Exception, java.lang.Exception):
 			t_name = current_thread().name
 			IJ.log("# {0}\t{1} images skipped as channels have different dimensions".format(t_name, root))
 			return
+			
+		try:	
+			if postProcessingMethod:
+				postProcessingMethod(composite, *postProcessingMethodArgs)
+		except Exception as e:
+			t_name = current_thread().name
+			IJ.log("# {0}\t{1} post processing skipped due to error.\n{2}".format(t_name, root, e))
 			
 		composite.setCalibration(calibration)
 		if self.savefolder:
@@ -168,12 +184,13 @@ class ColorMerger:
 			composite.setTitle(root)
 			[imp.close() for imp in imps if imp]
 			composite.show()
+			
 
 
 if __name__ in ("__builtin__", "__main__"):
 
-	savefolder = r"I:\LET805IBP-Q1894\Yokogawa\Staging area\220921\Color merged"
+	savefolder = r"C:\Users\uqibonac\Desktop\temp\colormerged"
 	ext = ".ics"
-	imgfolder = r"I:\LET805IBP-Q1894\Yokogawa\Staging area\220921"
+	imgfolder = r"C:\Users\uqibonac\Desktop\temp"
 	cm = ColorMerger(savefolder, imgfolder, ext, debug=True)
 	cm.run()

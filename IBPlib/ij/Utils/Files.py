@@ -5,11 +5,11 @@ import os
 
 
 # Boilerplate to extend modules search path #
-#from sys import path
-#import os.path
-#from java.lang.System import getProperty
-#jython_scripts = os.path.join(getProperty('user.home'), 'Jython_scripts')
-#path.append(jython_scripts)
+from sys import path
+import os.path
+from java.lang.System import getProperty
+jython_scripts = os.path.join(getProperty('user.home'), 'Jython_scripts')
+path.append(jython_scripts)
 #=========================================#
 
 
@@ -54,7 +54,11 @@ def imageloader(path, debug=False):
 	from loci.plugins import BF
 	ext = os.path.splitext(path)[1]
 	if ext in BIOFORMATS:
-		return BF.openImagePlus(path)[0]
+		try:
+			return BF.openImagePlus(path)[0]
+		except:
+			return ImagePlus(path)
+
 	else:
 		return ImagePlus(path)
 
@@ -142,5 +146,5 @@ if __name__ == "__main__":
 	print(sort_to_storage(name, tokens))
 	
 if __name__ in ("__builtin__", "__main__"):
-	path = r"R:\Igor BP\Projects\Let-805\Raw Data\Microscopies\Yokogawa Spinning Disk\let-805\unc-70(s1502)\38AH\63x OIL\decon\z-projections\050220_QH7726_38AH_worm1__cmle.tif"
+	path = r"I:\LET805IBP-Q1894\Yokogawa\Staging area\121021\test\z-projections\QH7066_worm1___cmle.ics"
 	imageloader(path).show()

@@ -22,7 +22,7 @@ from threading import Thread
 from Queue import Queue
 
 import ij.io.FileSaver
-from ij import (IJ, CompositeImage)
+from ij import (IJ, CompositeImage, ImagePlus)
 from ij.plugin import ZProjector
 from IBPlib.ij.Utils.Files import (buildList, imageloader)
 
@@ -77,7 +77,6 @@ class Projector:
 			IJ.log("Done working on {0}".format(img))
 			self.tasks_q.task_done()
 
-
 	def setup_workers(self):
 		task = self.projectorthread_task
 		if self.debug:
@@ -103,13 +102,19 @@ class Projector:
 				self.tasks_q.task_done()
 
 
-	def doprojection(self, title, onGPU=False):
+	def doprojection(self, titleOrImp, onGPU=False):
 		'''
-		Run ij.plugin.Zprojector on image referenced by title using self.method as
+		Run ij.plugin.Zprojector on image referenced by title or imp using self.method as
 		projection method and saves the projection on self.savefolder.
 		'''
-		IJ.log("# Processing {0}...".format(title))
-		imp = self.load_image(title)
+		if isinstance(titleOrImp, ImagePlus):
+			imp = titleOrImp
+			title = titleOrImp.getTitle()
+		else:
+			imp = self.load_image(titleOrImp)
+			title = titleOrImp
+			
+		IJ.log("# Projecting {0}...".format(title))
 		if onGPU:
 			projection = self.CLIJ2_max_projection(imp)
 		else:
@@ -155,7 +160,7 @@ class Projector:
 	
 if __name__ in ("__builtin__", "__main__"):
 	
-	test_img_folder = r"I:\LET805IBP-Q1894\Yokogawa\Staging area\220921"
-	test_output_folder = r"I:\LET805IBP-Q1894\Yokogawa\Staging area\220921\Z-projections"
+	test_img_folder = r"I:\LET805IBP-Q1894\Yokogawa\Staging area\111021\ColorMerged"
+	test_output_folder = r"I:\LET805IBP-Q1894\Yokogawa\Staging area\111021\Z-Projections"
 	projector = Projector(test_output_folder, test_img_folder, ".ics", debug=False)
-	projector.run(onGPU=True, exclusionFlag="561",)
+	projector.run(onGPU=False, exclusionFlag="done",)

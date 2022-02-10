@@ -86,7 +86,7 @@ def prepare_SNT(context, imp):
 	plugin.initialize(imp)
 	plugin.getPathAndFillManager().clear()
 	plugin.enableAstar(True)
-	plugin.enableHessian(True)
+	#plugin.enableHessian(True)
 
 	return plugin
 
@@ -329,22 +329,12 @@ def batch_profile_from_threshold(batch_parameters):
 			return
 
 	IJ.log("Done ...")
-	IJ.log("Results stored in '{0}'".format(csvs_folder))
+	IJ.log("{0}".format(csvs_folder))
 
 
 if __name__ in ("__builtin__", "__main__"):
-	from ij.io import Opener
+	imp = IJ.getImage()
+	analysis_imp = get_analysis_ch(imp, 2)
+	apply_threshold(analysis_imp, "Li")
+	analysis_imp.show()
 
-	opener = Opener()
-	roi_path = r"R:\Igor BP\Projects\Let-805\Raw Data\Microscopies\Yokogawa Spinning Disk\let-805(syb381)\L4\63x OIL\let-805 localization data\Reanalysis\rois\C2-1.tif_0.roi"
-	imp = imageloader(r"R:\\Igor BP\\Projects\\Let-805\\Raw Data\\Microscopies\\Yokogawa Spinning Disk\\let-805(syb381)\\L4\\63x OIL\\zprojections\\Stiched\\1.tif")
-	roi = opener.openRoi(roi_path)
-	ch = 1
-	rois = [roi]
-	output = r"C:\Users\uqibonac\Desktop\test"
-	th_method = "Li"
-	analysis_ch = 2
-	stroke_width = 5
-	print("Running ...")
-	print(profile_from_threshold(imp, analysis_ch, rois, stroke_width, th_method, output))
-	print("Run finished...")

@@ -6,11 +6,11 @@ from IBPlib.ij.Constants import LIBPREFSKEY, COLORS
 SUBKEY="{0}.colortags".format(LIBPREFSKEY) # Base name for userPrefs key used by Colortags.py
 
 class Colortags:
-'''
-This class handles persistence of the name of different color channels.
-It instantiates a GUI window to capture and show the color names in use.
-Other classes such as ColorMerger needs this to determine the color of the channel being processed.
-'''
+	'''
+	This class handles persistence of the name of different color channels.
+	It instantiates a GUI window to capture and show the color names in use.
+	Other classes such as ColorMerger needs this to determine the color of the channel being processed.
+	'''
 	def __init__(self):
 
 		self.window = None
