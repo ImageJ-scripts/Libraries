@@ -41,7 +41,7 @@ class Projector:
     Note that by default it will generate maximum intensity projections when run as a hotkey macro.
 	'''
 
-	def __init__(self, savefolder, imgfolder, ext, method="max", debug=False):
+	def __init__(self, savefolder=None, imgfolder=None, ext=".tif", method="max", debug=False):
 		self.debug=debug
 		self.savefolder = savefolder
 		self.imgfolder = imgfolder
@@ -151,10 +151,10 @@ class Projector:
 		
 		imageInput = clij2.push(imp)
 		imageOutput = clij2.create([imageInput.getWidth(), imageInput.getHeight()], imageInput.getNativeType())
-		clij2.op().maximumZProjection(imageInput, imageOutput)
+		clij2.maximumZProjection(imageInput, imageOutput)
 		projection = clij2.pull(imageOutput)
-		imageInput.close()
-		imageOutput.close()
+		#imageInput.close()
+		#imageOutput.close()
 		return projection
 
 	

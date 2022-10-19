@@ -63,7 +63,7 @@ def assisted_SNTtrace(context, imp):
 	return SNTpaths
 
 
-def prepare_SNT(context, imp):
+def prepare_SNT(context, imp, headless=False):
 	'''
 	Do a clean initialization of the SNT plugin
 	and returns the working instance of it.
@@ -71,18 +71,19 @@ def prepare_SNT(context, imp):
 	snt = SNTService()
 	if not snt.getContext():
 		snt.setContext(context)
-	sntUI = snt.getUI()
-
-	if not sntUI:
-		snt.initialize(True)
+	if not headless:
 		sntUI = snt.getUI()
-	elif not sntUI.isReady():
-		snt.getPlugin().cancelPath()
-		snt.getPlugin().cancelSearch(True)
-		sntUI.changeState(snt.UI.READY)
-
+		if not sntUI:
+			snt.initialize(True)
+			sntUI = snt.getUI()
+		elif not sntUI.isReady():
+			snt.getPlugin().cancelPath()
+			snt.getPlugin().cancelSearch(True)
+			sntUI.changeState(snt.UI.READY)
+	else:
+		snt.initialize(False)
+		
 	plugin = snt.getPlugin()
-	print(imp)
 	plugin.initialize(imp)
 	plugin.getPathAndFillManager().clear()
 	plugin.enableAstar(True)
