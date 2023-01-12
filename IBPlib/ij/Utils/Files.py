@@ -17,13 +17,13 @@ from IBPlib.ij.Constants import (__STORAGE_DIR__, __MAGNIFICATION_DIR__)
 
 BIOFORMATS = (".sld", ".ics", ".hdf5", ".czi", ".icd", ".ids")
 
-def buildList(path, extension=".tif", exclusionFlag="done", debug=False):
+def buildList(path, ext=".tif", exclusionFlag="done", debug=False):
 	'''
 	Returns a list with all the binary paths to files in the given path of the choosen extension that do not contain
 	the exclusion flag in the title
 	'''
 	if debug:
-		print("buildList() -> args={0}".format([path, extension, exclusionFlag]))
+		print("buildList() -> args={0}".format([path, ext, exclusionFlag]))
 	
 	if not os.path.exists(path):
 		raise IOError("buildList couldn't find {0}".format(path))
@@ -39,7 +39,7 @@ def buildList(path, extension=".tif", exclusionFlag="done", debug=False):
 	for f in os.listdir(path):
 		if debug:
 			print(f)
-		if not f.lower().endswith(extension) or f.find(exclusionFlag)>0:
+		if not f.lower().endswith(ext) or f.find(exclusionFlag)>0:
 			continue
 		files.append(os.path.join(path, f))
 	return files
